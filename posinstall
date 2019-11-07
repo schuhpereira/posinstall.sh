@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Criado por Eduardo Schuh Pereira
+# Data: 06/11/2019
+# Última edição: 07/11/2019
+# Versão 0.2
+# Script criado para atualizar e instalar programas no Ubuntu depois de ser instalado
+
+# ----------------------------- VARIÁVEIS ----------------------------- #
+PPA_GRAPHICS_DRIVERS="ppa:graphics-drivers/ppa"
+
+URL_WINE_KEY="https://dl.winehq.org/wine-builds/winehq.key"
+URL_PPA_WINE="https://dl.winehq.org/wine-builds/ubuntu/"
+URL_GOOGLE_CHROME="https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb"
+URL_TELEGRAM="https://telegram.org/dl/desktop/linux"
+
+DIRETORIO_DOWNLOADS="$HOME/Arquivos/Downloades/Programa\ /Linux"
+
+echo "Olá!"
+sleep 1
+echo "Através deste script, será atualizado o sistema Ubuntu."
+sleep 2
+echo "Também será instalado novos programas, tais como:"
+sleep 1
+echo "Google Chome"
+sleep 1
+echo "VirtualBox"
+sleep 1
+echo "Snap"
+sleep 1
+echo "Telegram"
+sleep 1
+# ---------------------------------------------------------------------- #
+
+# Programas que serão instalados via apt
+PROGRAMAS_PARA_INSTALAR=(
+  snapd
+  virtualbox
+)
+# ---------------------------------------------------------------------- #
+
+# ----------------------------- REQUISITOS ----------------------------- #
+
+echo "Primeiro vamos liberar travas eventuais do apt"
+
+## Removendo travas eventuais do apt ##
+sudo rm /var/lib/dpkg/lock-frontend
+sudo rm /var/cache/apt/archives/lock
+
+echo "Agora que liberamos as travas, podemos dar sequência..."
+sleep 1
+echo "Atualizando os repositórios do sistema."
+
+## Atualizando o repositório depois da adição de novos repositórios ##
+sudo apt update -y
+sleep 1
+
+echo "Adicionando repositórios de terceiros..."
+sleep 2
+## Adicionando repositórios de terceiros e suporte a Snap 
+sudo apt-add-repository "$PPA_GRAPHICS_DRIVERS" -y
+wget -nc "$URL_WINE_KEY"
+sudo apt-key add winehq.key
+sudo apt-add-repository "deb $URL_PPA_WINE bionic main"
+# ---------------------------------------------------------------------- #
+
+echo "Atualizando os repositórios do sistema."
+## Atualizando o repositório depois da adição de novos repositórios ##
+sudo apt update -y
+
+echo "Baixando os pacotes .deb dos programas."
+## Download e instalaçao de programas externos ##
+mkdir "$DIRETORIO_DOWNLOADS"
+cd $DIRETORIO_DOWNLOADS
+wget -c "$URL_GOOGLE_CHROME" -P "$DIRETORIO_DOWNLOADS"
+wget -c "$URL_TELEGRAM" -P "$DIRETORIO_DOWNLOADS"
+
+echo "Instalando os pacotes .deb"
+## Instalando pacotes .deb baixados na sessão anterior ##
+sudo dpkg -i $DIRETORIO_DOWNLOADS/*.deb
+
+# Instalar programas no apt
+for nome_do_programa in ${PROGRAMAS_PARA_INSTALAR[@]}; do
+  if ! dpkg -l | grep -q $nome_do_programa; then # Só instala se já não estiver instalado
+    apt install "$nome_do_programa" -y
+  else
+    echo "[INSTALADO] - $nome_do_programa"
+  fi
+done
+
+sudo apt install --install-recommends winehq-stable wine-stable wine-stable-i386 wine-stable-amd64 -y
+
+## Instalando pacotes Flatpak ##
+flatpak install flathub com.obsproject.Studio -y
+
+## Instalando pacotes Snap ##
+sudo snap install spotify
+
+# ----------------------------- PÓS-INSTALAÇÃO ----------------------------- #
+## Finalização, atualização e limpeza##
+sudo apt update && sudo apt dist-upgrade -y
+flatpak update
+sudo apt autoclean
+sudo apt autoremove -y
+sudo apt -f install -y
+# ---------------------------------------------------------------------- #
